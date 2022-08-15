@@ -16,7 +16,6 @@ import sys
 from pathlib import Path
 
 import django.conf.locale
-from django.core.files.storage import default_storage
 from django.http import Http404
 from django.utils.translation import gettext_lazy as _
 
@@ -25,7 +24,7 @@ import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
 from . import config
-from .config import get_boolean_setting, get_setting
+from .config import get_boolean_setting, get_custom_file, get_setting
 
 # Determine if we are running in "test" mode e.g. "manage.py test"
 TESTING = 'test' in sys.argv
@@ -127,7 +126,7 @@ STATFILES_I18_PROCESSORS = [
 ]
 
 # Color Themes Directory
-STATIC_COLOR_THEMES_DIR = STATIC_ROOT.joinpath('css', 'color-themes')
+STATIC_COLOR_THEMES_DIR = STATIC_ROOT.joinpath('css', 'color-themes').resolve()
 
 # Web URL endpoint for served media files
 MEDIA_URL = '/media/'
@@ -135,6 +134,8 @@ MEDIA_URL = '/media/'
 # Application definition
 
 INSTALLED_APPS = [
+    # Admin site integration
+    'django.contrib.admin',
 
     # InvenTree apps
     'build.apps.BuildConfig',
@@ -150,7 +151,6 @@ INSTALLED_APPS = [
     'InvenTree.apps.InvenTreeConfig',       # InvenTree app runs last
 
     # Core django modules
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'user_sessions',                # db user sessions
@@ -676,7 +676,7 @@ EMAIL_SUBJECT_PREFIX = get_setting('INVENTREE_EMAIL_PREFIX', 'email.prefix', '[I
 EMAIL_USE_TLS = get_boolean_setting('INVENTREE_EMAIL_TLS', 'email.tls', False)
 EMAIL_USE_SSL = get_boolean_setting('INVENTREE_EMAIL_SSL', 'email.ssl', False)
 
-DEFUALT_FROM_EMAIL = get_setting('INVENTREE_EMAIL_SENDER', 'email.sender', '')
+DEFAULT_FROM_EMAIL = get_setting('INVENTREE_EMAIL_SENDER', 'email.sender', '')
 
 EMAIL_USE_LOCALTIME = False
 EMAIL_TIMEOUT = 60
@@ -816,17 +816,13 @@ PLUGIN_RETRY = CONFIG.get('PLUGIN_RETRY', 5)  # how often should plugin loading 
 PLUGIN_FILE_CHECKED = False                    # Was the plugin file checked?
 
 # User interface customization values
+CUSTOM_LOGO = get_custom_file('INVENTREE_CUSTOM_LOGO', 'customize.logo', 'custom logo', lookup_media=True)
+CUSTOM_SPLASH = get_custom_file('INVENTREE_CUSTOM_SPLASH', 'customize.splash', 'custom splash')
+
 CUSTOMIZE = get_setting('INVENTREE_CUSTOMIZE', 'customize', {})
-
-CUSTOM_LOGO = get_setting('INVENTREE_CUSTOM_LOGO', 'customize.logo', None)
-
-# check that the logo-file exsists in media
-if CUSTOM_LOGO and not default_storage.exists(CUSTOM_LOGO):  # pragma: no cover
-    logger.warning(f"The custom logo file '{CUSTOM_LOGO}' could not be found in the default media storage")
-    CUSTOM_LOGO = False
 
 if DEBUG:
     logger.info("InvenTree running with DEBUG enabled")
 
-logger.debug(f"MEDIA_ROOT: '{MEDIA_ROOT}'")
-logger.debug(f"STATIC_ROOT: '{STATIC_ROOT}'")
+logger.info(f"MEDIA_ROOT: '{MEDIA_ROOT}'")
+logger.info(f"STATIC_ROOT: '{STATIC_ROOT}'")
