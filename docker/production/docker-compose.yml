@@ -49,8 +49,11 @@ services:
             - POSTGRES_DB=${INVENTREE_DB_NAME:?You must provide the 'INVENTREE_DB_NAME' variable in the .env file}
         volumes:
             # Map 'data' volume such that postgres database is stored externally
-            - inventree_data:/var/lib/postgresql/data/
+            # - inventree_data:/var/lib/postgresql/data/
+            - db_volume:/var/lib/postgresql/data
         restart: unless-stopped
+        
+            
 
     # redis acts as database cache manager
     # only runs under the "redis" profile : https://docs.docker.com/compose/profiles/
@@ -123,6 +126,8 @@ services:
         restart: unless-stopped
 
 volumes:
+    db_volume: 
+        external: true
     # Persistent data, stored external to the container(s)
     inventree_data:
         driver: local
